@@ -60,7 +60,7 @@ if __name__ == "__main__":
         filt_annot = np.array([a for a in pts.T if np.all(map[a[1], a[0]] > 205)])
 
         dist_last_waypt = 0
-        thresh = 25
+        thresh = 10
         annot = filt_annot
         print(annot.shape)
         waypts = [annot[0]]
