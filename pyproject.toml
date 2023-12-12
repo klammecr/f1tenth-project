@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "f1tenth-project"
+version = "0.1.0"
+description = ""
+authors = ["Chris Klammer <cklammer@andrew.cmu.edu>"]
+readme = "README.md"
+packages = [
+    { include = "utils" },
+    #{ include = "extra_package/**/*.py" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+numpy = "^1.26.2"
+rospy2 = "^1.0.3"
+PyYAML = "^6.0.1"
+argparse = "^1.4.0"
+pyrosbag = "^0.1.3"
+pycryptodome = "^3.19.0"
+pycryptodomex = "^3.19.0"
+gnupg = "^2.3.1"
+rospkg = "^1.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
