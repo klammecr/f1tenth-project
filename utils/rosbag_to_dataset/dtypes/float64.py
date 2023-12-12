@@ -3,7 +3,7 @@ import numpy as np
 
 from std_msgs.msg import Float64
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class Float64Convert(Dtype):
     """

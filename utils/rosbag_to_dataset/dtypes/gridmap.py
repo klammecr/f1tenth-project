@@ -4,7 +4,7 @@ import cv2
 
 from grid_map_msgs.msg import GridMap
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class GridMapConvert(Dtype):
     """

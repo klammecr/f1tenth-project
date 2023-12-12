@@ -3,7 +3,7 @@ import numpy as np
 
 from nav_msgs.msg import Odometry
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class OdometryConvert(Dtype):
     """

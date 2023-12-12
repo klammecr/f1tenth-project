@@ -3,7 +3,7 @@ import numpy as np
 
 from racepak.msg import rp_controls, rp_shock_sensors, rp_wheel_encoders
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class RPControlsConvert(Dtype):
     """

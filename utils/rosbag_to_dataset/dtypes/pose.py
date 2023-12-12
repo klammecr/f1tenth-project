@@ -3,7 +3,7 @@ import numpy as np
 
 from geometry_msgs.msg import PoseStamped
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class PoseConvert(Dtype):
     """

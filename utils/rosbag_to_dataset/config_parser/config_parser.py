@@ -4,16 +4,16 @@ import numpy as np
 
 from collections import OrderedDict
 
-from rosbag_to_dataset.dtypes.float64 import Float64Convert
-from rosbag_to_dataset.dtypes.odometry import OdometryConvert
-from rosbag_to_dataset.dtypes.image import ImageConvert
-from rosbag_to_dataset.dtypes.ackermann_drive import AckermannDriveConvert
-from rosbag_to_dataset.dtypes.twist import TwistConvert
-from rosbag_to_dataset.dtypes.imu import ImuConvert
-from rosbag_to_dataset.dtypes.pose import PoseConvert
-from rosbag_to_dataset.dtypes.gridmap import GridMapConvert
-from rosbag_to_dataset.dtypes.racepak_sensors import RPControlsConvert, RPWheelEncodersConvert, RPShockSensorsConvert
-
+from utils.rosbag_to_dataset.dtypes.float64 import Float64Convert
+from utils.rosbag_to_dataset.dtypes.odometry import OdometryConvert
+from utils.rosbag_to_dataset.dtypes.image import ImageConvert
+from utils.rosbag_to_dataset.dtypes.ackermann_drive import AckermannDriveConvert
+from utils.rosbag_to_dataset.dtypes.twist import TwistConvert
+from utils.rosbag_to_dataset.dtypes.imu import ImuConvert
+from utils.rosbag_to_dataset.dtypes.pose import PoseConvert
+from utils.rosbag_to_dataset.dtypes.gridmap import GridMapConvert
+from utils.rosbag_to_dataset.dtypes.racepak_sensors import RPControlsConvert, RPWheelEncodersConvert, RPShockSensorsConvert
+utils.
 class ConfigParser:
     """
     Class that reads in the spec of the rosbag ot convert to data.

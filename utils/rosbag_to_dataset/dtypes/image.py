@@ -4,7 +4,7 @@ import cv2
 
 from sensor_msgs.msg import Image
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class ImageConvert(Dtype):
     """

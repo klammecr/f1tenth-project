@@ -3,7 +3,7 @@ import numpy as np
 
 from sensor_msgs.msg import Imu
 
-from rosbag_to_dataset.dtypes.base import Dtype
+from utils.rosbag_to_dataset.dtypes.base import Dtype
 
 class ImuConvert(Dtype):
     """
