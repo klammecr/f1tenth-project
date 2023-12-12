@@ -2,14 +2,11 @@
 import os
 import numpy as np
 import argparse
-# import cv2
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import ImageGrid
-# import re
-import yaml
+from pathlib import Path
+from rosbags.highlevel import AnyReader
+import cv2
 
 # ROS Imports
-import rosbag
 import rospy
 from cv_bridge import CvBridge
 
@@ -131,6 +128,8 @@ class Converter:
         for topic, remap in self.topic_map.items():
             data_type = data_types[topic]
             trim_type = data_type.split("/")[-1]
+            if "Pose" in trim_type:
+                trim_type = "Pose"
             data      = self.queue[topic]
             try:
                 # Create the converter
@@ -149,7 +148,10 @@ class Converter:
                 elif trim_type == "PointCloud2":
                     # Size of the disparity iamge was 512x256
                     args = ((512,256), True)
+                else:
+                    args = ()
 
+                # Data type converter!
                 converter = dtype_convert[trim_type](*args)
                 
             except:
@@ -214,81 +216,70 @@ class Converter:
 
         return torch_traj
 
-    def convert_bag(self, bag, as_torch=False, zero_pose_init=False):
+    def convert_bag(self, bag_file, as_torch=False, zero_pose_init=False):
         """
         Convert a bag into a dataset.
         """
         # Setup
         print('Extracting Messages...')
         self.reset_queue()
-        info_dict = yaml.safe_load(bag._get_yaml_info())
-        all_topics = bag.get_type_and_topic_info()[1].keys()
 
-        # Setup Data types
-        data_types = {}
-        for k in self.topic_map.keys():
-            assert k in all_topics, "Could not find topic {} from envspec in the list of topics for this bag.".format(k)
-
-            # Take all relevant topics and figure their data types
-            data_types[k] = [topic["type"] for topic in info_dict["topics"] if k == topic["topic"]][0]
-
-        #For now, start simple. Just get the message that immediately follows the timestep
-        #Assuming that messages are chronologically ordered per topic.
-
-        #The start and stop time depends on if there is a clock topic
-        if '/clock' in all_topics:
-            clock_msgs = []
-            for topic, msg, t in bag.read_messages():
-                if topic == '/clock':
-                    clock_msgs.append(msg)
-            info_dict["start"] = clock_msgs[0].clock.to_sec()
-            info_dict["end"]   = clock_msgs[-1].clock.to_sec()
-
-        # Create timesteps for each topic of interest
-        rates = self.calculate_rates()
-        timesteps = {k:np.arange(info_dict["start"], info_dict["end"], rates[k]) for k in self.topic_map.keys()}
-
+        # Iterate through the ROS1 or ROS2 bag
         topic_curr_idx = {k:0 for k in self.topic_map.keys()}
-        # Write the code to check if stamp is available. Use it if so else default back to t.
-        for topic, msg, t in bag.read_messages(topics=self.topic_map.keys()):
-            if topic in self.topic_map.keys():
-                tidx = topic_curr_idx[topic]
+        with AnyReader([Path(bag_file)]) as reader:
+            # Setup Data types
+            all_topics = reader.topics
+            data_types = {topic: all_topics[topic].msgtype for topic in all_topics.keys() if topic in self.topic_map.keys()}
+            for k in self.topic_map.keys():
+                assert k in all_topics, "Could not find topic {} from envspec in the list of topics for this bag.".format(k)
 
-                #Check if there is a stamp and it has been set.
-                has_stamp = hasattr(msg, 'header') and msg.header.stamp.to_sec() > 1000.
-                has_info  = hasattr(msg, 'info') and msg.info.header.stamp.to_sec() > 1000.
+            # Calculate timesteps
+            rates = self.calculate_rates()
+            timesteps = {k:np.arange(reader.start_time*1e-9, reader.end_time*1e-9, rates[k]) for k in self.topic_map.keys()}
 
-                #Use the timestamp if its valid. Otherwise default to rosbag time.
-                if (has_stamp or has_info) and self.use_stamps:
-                    stamp = msg.header.stamp if has_stamp else msg.info.header.stamp
-                    if (tidx < timesteps[topic].shape[0]) and (stamp > rospy.Time.from_sec(timesteps[topic][tidx])):
-                        #Add to data. Find the smallest timestep that's less than t.
-                        idx = np.searchsorted(timesteps[topic], stamp.to_sec())
-                        topic_curr_idx[topic] = idx
+            for connection, ts, data in reader.messages():
+                # See if we can deserialize
+                try:
+                    msg = reader.deserialize(data, connection.msgtype)
+                except:
+                    print(f"Could not deserialize: {connection.msgtype}")
+                    continue
+            
+                if connection.topic in self.topic_map.keys():
+                    tidx = topic_curr_idx[connection.topic]
 
-                        #In case of missing data.
-                        while len(self.queue[topic]) < idx:
-                            self.queue[topic].append(None)
+                    #Check if there is a stamp and it has been set.
+                    has_stamp = msg.header.stamp.sec > 1000.
+                    has_info  = msg.header.stamp.sec > 1000.
 
-                        self.queue[topic].append(msg)
-                else:
-                    if (tidx < timesteps[topic].shape[0]) and (t > rospy.Time.from_sec(timesteps[topic][tidx])):
-                        #Add to data. Find the smallest timestep that's less than t.
-                        idx = np.searchsorted(timesteps[topic], t.to_sec())
-                        topic_curr_idx[topic] = idx
+                    #Use the timestamp if its valid. Otherwise default to rosbag time.
+                    if (has_stamp or has_info) and self.use_stamps:
+                        stamp = msg.header.stamp if has_stamp else msg.info.header.stamp
+                        topic = connection.topic
+                        stamp_float = float(f"{stamp.sec}.{stamp.nanosec}")
+                        if (tidx < timesteps[topic].shape[0]) and stamp_float > timesteps[topic][tidx]:
+                            #Add to data. Find the smallest timestep that's less than t.
+                            idx = np.searchsorted(timesteps[topic], stamp_float)
+                            topic_curr_idx[topic] = idx
 
-                        #In case of missing data.
-                        while len(self.queue[topic]) < idx:
-                            self.queue[topic].append(None)
+                            #In case of missing data.
+                            while len(self.queue[topic]) < idx:
+                                self.queue[topic].append(None)
 
-                        self.queue[topic].append(msg)
+                            self.queue[topic].append(msg)
+                    else:
+                        if (tidx < timesteps[topic].shape[0]) and (t > rospy.Time.from_sec(timesteps[topic][tidx])):
+                            #Add to data. Find the smallest timestep that's less than t.
+                            idx = np.searchsorted(timesteps[topic], t.to_sec())
+                            topic_curr_idx[topic] = idx
 
+                            #In case of missing data.
+                            while len(self.queue[topic]) < idx:
+                                self.queue[topic].append(None)
 
-        # Make sure all queues same length
-        for topic in self.topic_map.keys():
-            while len(self.queue[topic]) < timesteps[topic].shape[0]:
-                self.queue[topic].append(None)
+                            self.queue[topic].append(msg)
 
+        # Convert to dataset
         self.preprocess_queue(rates)
         res = self.convert_queue(rates, data_types)
         if as_torch:
@@ -320,35 +311,47 @@ if __name__ == "__main__":
     Parse TartanDrive bag files and save to HDF5 to be loaded as a torch dataset later.
     """
     parser = argparse.ArgumentParser(description="Tartan Drive Bag Parser")
-    parser.add_argument("--bag_location", help="Input ROS bag.", default="/media/cklammer/KlammerData1/data/f1tenth/20231210_173215")
+    parser.add_argument("--bag_dir", help="Input ROS bag.", default="/media/cklammer/KlammerData1/data/f1tenth")
+    parser.add_argument("--seq", help="Input ROS bag.", default="20231210_173840")
     parser.add_argument("--output_dir", help="Output directory.", default="output")
     args = parser.parse_args()
-    # print(f"Extract images from {args.bag_file} on topics {topic_save_folder_dict.keys()} into {args.output_dir}")
+    
+    # Setup paths
+    bag_loc = f"{args.bag_dir}/{args.seq}"
+    out_loc = f"{args.output_dir}/{args.seq}"
+    if not os.path.exists(out_loc):
+        os.mkdir(out_loc)
     
     # Instaniate Converter
     topic_map = {
                    "/pf/viz/inferred_pose":"odom", # Raw odometry from VIO, this is from the world frame, we want this for GPS
                    "/depth/image_rect_raw": "depth_img",
                    "/color/image_raw": "color_img",
-                   "/color/camera_info" : None,
-                   "/color/metadata" : None,
-                   "/depth/camera_info" : None,
-                   "/depth/metadata" : None,
-                   "/extrinsics/depth_to_color" : None,
-                   "/extrinsics/depth_to_infra1" : None,
-                   "/extrinsics/depth_to_infra2" : None
+                #   "/color/camera_info" : None,
+                #    "/color/metadata" : None,
+                #    "/depth/camera_info" : None,
+                #    "/depth/metadata" : None,
+                #    "/extrinsics/depth_to_color" : None,
+                #    "/extrinsics/depth_to_infra1" : None,
+                #    "/extrinsics/depth_to_infra2" : None
                 }
     conv = Converter(True, topic_map=topic_map, dt=0.1)
-    
-    # Directory of bags
-    if os.path.isdir(args.bag_location):
-        convert_dir_of_bags(conv, args.bag_location, args.output_dir)
 
     # Single Bag File
-    else:
-        bag = rosbag.Bag(args.bag_location, "r")
-        # types, topics = bag.get_type_and_topic_info() # Comment out if not debugging
-        conv = Converter(True, topic_map=topic_map, dt=0.1)
-        out = conv.convert_bag(bag, as_torch=True, zero_pose_init=False)
-        filename_no_ext = get_bagfile_name_no_ext(args.bag_location)
-        # torch.save(out, f"{args.output_dir}/{filename_no_ext}.pth")
+    out = conv.convert_bag(bag_loc, as_torch=False, zero_pose_init=False)
+
+    for k, v in out.items():
+        topic_dir = f"{out_loc}/{k}"
+        if not os.path.exists(topic_dir):
+            os.mkdir(topic_dir)
+        
+        if "img" in k:
+            for i in range(v.shape[0]):
+                img = v[i]
+                img_swp = np.transpose(img, (1, 2, 0))
+                img_swp = cv2.cvtColor(img_swp, cv2.COLOR_RGB2BGR)
+                if img_swp.shape[-1] == 1:
+                    img_swp = img_swp[:, :, 0]
+                cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp*255).astype("uint8"))
+        else:
+            np.savetxt(f"{topic_dir}/{k}.npy", v)

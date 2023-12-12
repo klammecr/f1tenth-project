@@ -21,6 +21,8 @@ class PoseConvert(Dtype):
         return PoseStamped
 
     def ros_to_numpy(self, msg):
+        if msg is None:
+            return None
         if self.initial_position is None:
             self.initial_position = np.array([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z])
 

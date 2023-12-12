@@ -31,10 +31,10 @@ class ImageConvert(Dtype):
 
     def ros_to_numpy(self, msg):
 #        assert isinstance(msg, self.rosmsg_type()), "Got {}, expected {}".format(type(msg), self.rosmsg_type())
-
-        is_rgb = ('8' in msg.encoding)
-        if is_rgb:
+        if ('8' in msg.encoding):
             data = np.frombuffer(msg.data, dtype=np.uint8).copy()
+        elif ("16" in msg.encoding):
+            data = np.frombuffer(msg.data, dtype=np.uint16).copy()
         else:
             data = np.frombuffer(msg.data, dtype=np.float32).copy()
 
@@ -57,8 +57,10 @@ class ImageConvert(Dtype):
         else:
             data = np.moveaxis(data, 2, 0) #Switch to channels-first
 
-        if is_rgb:
+        if ('8' in msg.encoding):
             data = data.astype(np.float32) / (255. if self.aggregate == 'none' else 255.**self.nchannels)
+        elif ("16" in msg.encoding):
+            data = data.astype(np.float32) / (65535. if self.aggregate == 'none' else 255.**self.nchannels)
 
         return data
 
