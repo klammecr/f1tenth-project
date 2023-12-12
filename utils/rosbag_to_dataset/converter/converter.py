@@ -14,15 +14,15 @@ import rospy
 from cv_bridge import CvBridge
 
 # In House
-from rosbag_to_dataset.dtypes.float64 import Float64Convert
-from rosbag_to_dataset.dtypes.odometry import OdometryConvert
-from rosbag_to_dataset.dtypes.image import ImageConvert
-from rosbag_to_dataset.dtypes.ackermann_drive import AckermannDriveConvert
-from rosbag_to_dataset.dtypes.twist import TwistConvert
-from rosbag_to_dataset.dtypes.imu import ImuConvert
-from rosbag_to_dataset.dtypes.pose import PoseConvert
-from rosbag_to_dataset.dtypes.gridmap import GridMapConvert
-from rosbag_to_dataset.dtypes.pointcloud import PointCloud2Convert
+from utils.rosbag_to_dataset.dtypes.float64 import Float64Convert
+from utils.rosbag_to_dataset.dtypes.odometry import OdometryConvert
+from utils.rosbag_to_dataset.dtypes.image import ImageConvert
+from utils.rosbag_to_dataset.dtypes.ackermann_drive import AckermannDriveConvert
+from utils.rosbag_to_dataset.dtypes.twist import TwistConvert
+from utils.rosbag_to_dataset.dtypes.imu import ImuConvert
+from utils.rosbag_to_dataset.dtypes.pose import PoseConvert
+from utils.rosbag_to_dataset.dtypes.gridmap import GridMapConvert
+from utils.rosbag_to_dataset.dtypes.pointcloud import PointCloud2Convert
 
 # Data type converters
 dtype_convert = {
@@ -320,8 +320,8 @@ if __name__ == "__main__":
     Parse TartanDrive bag files and save to HDF5 to be loaded as a torch dataset later.
     """
     parser = argparse.ArgumentParser(description="Tartan Drive Bag Parser")
-    parser.add_argument("--bag_location", help="Input ROS bag.")
-    parser.add_argument("--output_dir", help="Output directory.")
+    parser.add_argument("--bag_location", help="Input ROS bag.", default="/media/cklammer/KlammerData1/data/f1tenth/20231210_173215")
+    parser.add_argument("--output_dir", help="Output directory.", default="output")
     args = parser.parse_args()
     # print(f"Extract images from {args.bag_file} on topics {topic_save_folder_dict.keys()} into {args.output_dir}")
     
