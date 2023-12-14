@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(final_race)
+project(project_rrt)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -37,15 +37,15 @@ include_directories(
 )
 
 # Create Cpp executable
-add_executable(final_race src/rrt_node.cpp src/rrt.cpp)
+add_executable(project_rrt src/rrt_node.cpp src/rrt.cpp)
 
-ament_target_dependencies(final_race 
+ament_target_dependencies(project_rrt 
   rclcpp geometry_msgs ackermann_msgs nav_msgs sensor_msgs std_msgs visualization_msgs tf2_ros tf2_geometry_msgs
 )
 
 # Install Cpp executables
 install(TARGETS
-  final_race
+  project_rrt
   DESTINATION lib/${PROJECT_NAME})
 
 # Install Python modules

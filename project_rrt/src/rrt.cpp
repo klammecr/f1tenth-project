@@ -30,7 +30,7 @@ RRT::RRT(): rclcpp::Node("rrt_node"), gen((std::random_device())()) {
     this->declare_parameter("valid_path_length", 2);
     this->declare_parameter("safety_padding", 0.3302);
     this->declare_parameter("disparity_extend_range", 0.1016);
-    this->declare_parameter("waypoint_file_path", "/sim_ws/src/final_race/waypoints/waypoints.txt");
+    this->declare_parameter("waypoint_file_path", "/sim_ws/src/project_rrt/waypoints/waypoints.txt");
     this->declare_parameter("waypoint_frame_id", "map");
     this->declare_parameter("pose_to_listen", "ego_racecar/base_link");
     this->declare_parameter("pose_topic", "ego_racecar/odom");
@@ -75,11 +75,9 @@ RRT::RRT(): rclcpp::Node("rrt_node"), gen((std::random_device())()) {
     string grid_topic = "hippo_map";
     pose_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       pose_topic, 1, std::bind(&RRT::pose_callback, this, std::placeholders::_1));
-    scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-      scan_topic, 1, std::bind(&RRT::scan_callback, this, std::placeholders::_1));
     drive_sub_ = this->create_subscription<ackermann_msgs::msg::AckermannDriveStamped>(
       drive_topic, 1, std::bind(&RRT::drive_callback, this, std::placeholders::_1));
-    grid_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+    occupancy_grid_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
       grid_topic, 1, std::bind(&RRT::grid_callback, this, std::placeholders::_1));
     
 

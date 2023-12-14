@@ -35,19 +35,19 @@ class SegBevNode(Node):
         self.sem_sub = self.create_subscription(
             Image,
             "/color/image_raw",
-            self.seg_img_callback,
+            self.callback_seg_img,
             10
         )
         self.depth_sub = self.create_subscription(
             Image,
             "/depth/image_rect_raw",
-            self.depth_img_callback,
+            self.callback_depth_img,
             10
         )
         self.depth_cam_info_sub = self.create_subscription(
             CameraInfo,
             "/depth/camera_info",
-            self.depth_cam_info_callack,
+            self.callback_depth_cam_info,
             10
         )
 
@@ -129,7 +129,7 @@ class SegBevNode(Node):
         occ_grid = self.bev_to_occ_grid(bev)
         self.occ_grid_pub.publish(occ_grid)
 
-    def depth_cam_info_callack(self, msg: CameraInfo):
+    def callback_depth_cam_info(self, msg: CameraInfo):
         self.K = msg.k.reshape(3,3)
 
     def callback_depth_img(self, msg : Image):
