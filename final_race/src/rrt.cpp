@@ -80,8 +80,8 @@ RRT::RRT(): rclcpp::Node("rrt_node"), gen((std::random_device())()) {
     drive_sub_ = this->create_subscription<ackermann_msgs::msg::AckermannDriveStamped>(
       drive_topic, 1, std::bind(&RRT::drive_callback, this, std::placeholders::_1));
     grid_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-      grid_topic, 1, std::bind(&RRT::grid_callback, this, std::placeholders::_1);
-    )
+      grid_topic, 1, std::bind(&RRT::grid_callback, this, std::placeholders::_1));
+    
 
     // TODO: could be receiving inferred poses later generated from fake laser scans
 
