@@ -67,18 +67,23 @@ RRT::RRT(): rclcpp::Node("rrt_node"), gen((std::random_device())()) {
     point_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>("goal_point", 10);
     path_pub_ = this->create_publisher<nav_msgs::msg::Path>("global_path", 10);
     processed_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("processed_scan", 10);
-    occupancy_grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
     vis_marker_array_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("vis_marker_array", 10);
 
     // create ROS subscribers
     string drive_topic = "drive";
     string scan_topic = "scan";
+    string grid_topic = "hippo_map";
     pose_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       pose_topic, 1, std::bind(&RRT::pose_callback, this, std::placeholders::_1));
     scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
       scan_topic, 1, std::bind(&RRT::scan_callback, this, std::placeholders::_1));
     drive_sub_ = this->create_subscription<ackermann_msgs::msg::AckermannDriveStamped>(
       drive_topic, 1, std::bind(&RRT::drive_callback, this, std::placeholders::_1));
+    grid_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+      grid_topic, 1, std::bind(&RRT::grid_callback, this, std::placeholders::_1);
+    )
+
+    // TODO: could be receiving inferred poses later generated from fake laser scans
 
     // create path using waypoints in the file
     log_waypoints();
@@ -104,61 +109,9 @@ void RRT::drive_callback(const ackermann_msgs::msg::AckermannDriveStamped::Const
 
 }
 
-// scan callback function for updating occupancy grid
-void RRT::scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr scan_msg) {
-
-    // acquire the laser scan
-    std::vector<float> laser_values = scan_msg->ranges;
-
-    // set occupancy grid time stamp and reference frame
-    rrt_grid.header.stamp = this->get_clock()->now();
-    rrt_grid.header.frame_id = pose_to_listen;
-
-    // reset occupancy grid
-    std::fill(rrt_grid.data.begin(), rrt_grid.data.end(), 0);
-
-    // update occupancy grid
-    for (int i = 0; i < grid_height; i++) {
-        for (int j = 0; j < grid_width; j++) {
-
-            // find x, y relative to the car
-            double x_cell = grid_resolution * j;
-            double y_cell = grid_resolution * (i - grid_height / 2);
-
-            // find euclidean distance
-            double dist_cell = euclidean_dist(x_cell, y_cell);
-
-            // find angle
-            double angle_cell = atan2(y_cell, x_cell);
-            int angle_index = (angle_cell - angle_min) / angle_increment;
-
-            // check if distance match
-            if (dist_cell >= laser_values[angle_index] - safety_padding) {
-                rrt_grid.data[i * grid_width + j] = 100;
-            }
-        }
-    }
-
-    // publish that
-    occupancy_grid_pub_->publish(rrt_grid);
-
-    // process it
-    process_scan(laser_values);
-
-    // publish the processed scan for debugging purpose
-    auto processed_laser_msg = sensor_msgs::msg::LaserScan();
-    processed_laser_msg.header = scan_msg->header;
-    processed_laser_msg.angle_min = angle_min;
-    processed_laser_msg.angle_max = angle_max;
-    processed_laser_msg.angle_increment = angle_increment;
-    processed_laser_msg.time_increment = scan_msg->time_increment;
-    processed_laser_msg.scan_time = scan_msg->scan_time;
-    processed_laser_msg.range_min = scan_msg->range_min;
-    processed_laser_msg.range_max = scan_msg->range_max;
-    processed_laser_msg.ranges = laser_values;
-    processed_laser_msg.intensities = scan_msg->intensities;
-    processed_scan_pub_->publish(processed_laser_msg);
-
+// occupancy grid callback function to receive processed grid from Hungry Hippos
+void RRT::grid_callback(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr grid_msg) {
+    rrt_grid = *grid_msg;
 }
 
 // pose callback function for RRT main loop

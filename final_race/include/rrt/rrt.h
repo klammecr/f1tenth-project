@@ -64,22 +64,24 @@ private:
     // - pose subscriber for pose callback (rrt routine)
     // - scan subscriber for scan callback (occupancy grid update)
     // - drive subscriber for drive callback (steering angle update for kinematics)
+    // - occupancy grid subscriber for grid callback (costmap update from Hungry Hippos)
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr pose_sub_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr drive_sub_;
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_sub_;
+
+    // TODO: could be receiving inferred poses later generated from fake laser scans
 
     // add the following publishers:
     // - drive publisher
     // - path publisher for waypoint debug
     // - point publisher for goal point debug
     // - processed laser publisher for preprocessing debug (OPTIONAL)
-    // - occupancy grid publisher for rrt grid debug
     // - visualization marker array publisher for rrt tree node debug
     rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr drive_pub_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
     rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr point_pub_;
     rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr processed_scan_pub_;
-    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr vis_marker_array_pub_;
 
     // ----------------------------- END PUBLISHER/SUBSCRIPTION -----------------------------
@@ -183,10 +185,10 @@ private:
     // callbacks
     // where rrt actually happens
     void pose_callback(const nav_msgs::msg::Odometry::ConstSharedPtr pose_msg);
-    // updates occupancy grid
-    void scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr scan_msg);
     // updates last steering command
     void drive_callback(const ackermann_msgs::msg::AckermannDriveStamped::ConstSharedPtr drive_msg);
+    // updates occupancy grid (received from Chris' Hungry Hippos package)
+    void grid_callback(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr grid_msg);
 
     // RRT methods
     std::vector<double> sample_config(std::vector<double> &goal, bool goal_status);
