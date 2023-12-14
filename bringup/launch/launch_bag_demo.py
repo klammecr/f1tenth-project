@@ -13,14 +13,19 @@ def generate_launch_description():
     ld = LaunchDescription()
     
     # Get path to the params.yaml file.
-    bag_demo_params = Path(get_package_share_directory("lab6_pkg"), "config", "simulation_params.yaml")
+    bag_demo_params = Path(get_package_share_directory("bringup"), "config", "bag_demo_params.yaml")
+
+    semantic_segmentation_node = Node(
+        package="isaac_ros_image_segmentation",
+        executable=
+    )
 
     # Create new actions to spin up nodes for the pure pursuit node and path
     # file publisher node.
     pose_publisher_node = Node(
         package="pure_pursuit",
         executable="pose_publisher_node.py",
-        parameters=[simulation_params],
+        parameters=[bag_demo_params],
         # NOTE: For now, not using namespaces until I can spend more time
         # figuring out how to manipulate the bridge's namespaces.
         remappings=[("odom", "ego_racecar/odom"),
@@ -30,14 +35,14 @@ def generate_launch_description():
     path_file_publisher_node = Node(
         package="pure_pursuit",
         executable="path_publisher_node.py",
-        parameters=[simulation_params],
+        parameters=[bag_demo_params],
         # remappings=[]
     )
     pure_pursuit_node = Node(
         # namespace="ego_racecar",
         package="pure_pursuit",
         executable="pure_pursuit_node.py",
-        parameters=[simulation_params],
+        parameters=[bag_demo_params],
         remappings=[("pose", "ego_racecar/pose"),
                     ("path", "rrt_path")]
         # arguments=["--ros-args", "--log-level", "debug"]
@@ -45,13 +50,13 @@ def generate_launch_description():
     laser_costmap_node = Node(
         package="lab6_pkg",
         executable="laser_costmap_node.py",
-        parameters=[simulation_params],
+        parameters=[bag_demo_params],
         remappings=[("pose", "ego_racecar/pose")]
     )
     rrt_node = Node(
         package="lab6_pkg",
         executable="rrt_node.py",
-        parameters=[simulation_params],
+        parameters=[bag_demo_params],
         remappings=[("costmap", "laser_local_costmap"),
                     ("pose", "ego_racecar/pose"),
                     ("path", "rrt_path")]
@@ -59,7 +64,7 @@ def generate_launch_description():
     goal_publisher_node = Node(
         package="lab6_pkg",
         executable="goal_publisher_node.py",
-        parameters=[simulation_params],
+        parameters=[bag_demo_params],
         remappings=[("pose", "ego_racecar/pose")]
     )
     # Add the launch_ros "Node" actions we created.
