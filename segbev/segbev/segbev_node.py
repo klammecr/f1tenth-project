@@ -98,7 +98,7 @@ class SegBevNode(Node):
 
     def callback_seg_img(self, msg : Image):
         # Extract out seg img
-        seg_img = None
+        seg_img = msg.data.reshape(msg.height, msg.width)
 
         # Find where in the image the wall and car is
         locs_wall = np.where(seg_img == self.WALL_IDX)
@@ -141,7 +141,7 @@ class SegBevNode(Node):
         self.K = msg.k.reshape(3,3)
 
     def callback_depth_img(self, msg : Image):
-        self.depth_img = msg.data.reshape(msg.width, msg.height)
+        self.depth_img = msg.data.reshape(msg.height, msg.width)
         self.depth_img *= 1e-3
 
 def main(args=None):
