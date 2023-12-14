@@ -1,9 +1,12 @@
 # Third Party
-import rclpy
-from rclpy.node import Node
 import numpy as np
 import cv2
 import open3d as o3d
+
+# ROS Imports
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image, CameraInfo
 
 # In House
 from roboteye.ground_robot import GroundRobot, Frames, COB
@@ -25,10 +28,34 @@ class SegBevNode(Node):
         self.WALL_IDX = 2
 
         # Latest image buffers
-        self.color_img = None
         self.depth_img = None
+        self.K = None
 
-        # TODO: Set up pubsub
+        # Set up pubsub
+        self.sem_sub = self.create_subscription(
+            Image,
+            "/color/image_raw",
+            self.seg_img_callback,
+            10
+        )
+        self.depth_sub = self.create_subscription(
+            Image,
+            "/depth/image_rect_raw",
+            self.depth_img_callback,
+            10
+        )
+        self.depth_cam_info_sub = self.create_subscription(
+            CameraInfo,
+            "/depth/camera_info",
+            self.depth_cam_info_callack,
+            10
+        )
+
+        self.occ_grid_pub = self.create_publisher(
+            Image,
+            "/occ_grid",
+            10
+        )
 
     def bevify(self, voxel_grid):
         egocentric_grid = np.zeros((int(self.GRID_SIZE[0]/self.VOXEL_SIZE[0]), int(self.GRID_SIZE[1]/self.VOXEL_SIZE[1]), 3))
@@ -48,6 +75,7 @@ class SegBevNode(Node):
                 x_idx = origin_x-round(lx)     
 
                 egocentric_grid[y_idx, x_idx] += voxel.color/len(voxels)
+        return egocentric_grid
 
     def bev_to_occ_grid(bev):
         occ_grid = (bev>0).astype("int")
@@ -67,9 +95,46 @@ class SegBevNode(Node):
         pc.points = o3d.utility.Vector3dVector(comb_pts)
         pc.colors = o3d.utility.Vector3dVector(comb_colors)
 
-    def callback_image():
-        pass
+    def callback_seg_img(self, msg : Image):
+        # Extract out seg img
+        seg_img = None
 
+        # Find where in the image the wall and car is
+        locs_wall = np.where(seg_img == self.WALL_IDX)
+        locs_car  = np.where(seg_img == self.CAR_IDX)
+        locs_neg  = np.where(seg_img == 0)
+        pts_img_car = np.vstack((locs_car[1], locs_car[0]))
+        pts_img_car_homog = np.vstack((pts_img_car, np.ones((1, pts_img_car.shape[1])))) * self.depth_img[locs_car[0], locs_car[1]]
+        pts_img_wall = np.vstack((locs_wall[1], locs_wall[0]))
+        pts_img_wall_homog = np.vstack((pts_img_wall, np.ones((1, pts_img_wall.shape[1])))) * self.depth_img[locs_wall[0], locs_wall[1]]
+        pts_img_neg = np.vstack((locs_neg[1], locs_neg[0]))
+        pts_img_neg_homog = np.vstack((pts_img_neg, np.ones((1, pts_img_neg.shape[1])))) * self.depth_img[locs_neg[0], locs_neg[1]]
+
+        # Selectively un-project each class into a 3D point cloud
+        gr = GroundRobot(cam_calib={"K":self.K})
+        pts_car  = gr.transform_points(pts_img_car_homog.T, Frames.IMG_FRAME, Frames.BODY_FRAME)
+        pts_wall = gr.transform_points(pts_img_wall_homog.T, Frames.IMG_FRAME, Frames.BODY_FRAME)
+        pts_neg  = gr.transform_points(pts_img_neg_homog.T, Frames.IMG_FRAME, Frames.BODY_FRAME) 
+
+
+        # Create the point cloud to visualize
+        pc = o3d.geometry.PointCloud()
+        pc = self.draw_car_pts(pc, pts_car)
+        pc = self.draw_wall_pts(pc, pts_wall)
+        #pc = draw_neg_pts(pc, pts_neg)
+        
+        voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pc, 0.02)
+        # o3d.visualization.draw_geometries([voxel_grid], window_name="Combined Semantic PointCloud")
+        bev = self.bevify(voxel_grid)
+        occ_grid = self.bev_to_occ_grid(bev)
+        self.occ_grid_pub.publish(occ_grid)
+
+    def depth_cam_info_callack(self, msg: CameraInfo):
+        self.K = msg.k.reshape(3,3)
+
+    def callback_depth_img(self, msg : Image):
+        self.depth_img = msg.data.reshape(msg.width, msg.height)
+        self.depth_img *= 1e-3
 
 def main(args=None):
     rclpy.init(args=args)
