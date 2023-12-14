@@ -60,7 +60,7 @@ class ImageConvert(Dtype):
         if ('8' in msg.encoding):
             data = data.astype(np.float32) / (255. if self.aggregate == 'none' else 255.**self.nchannels)
         elif ("16" in msg.encoding):
-            data = data.astype(np.float32) / (65535. if self.aggregate == 'none' else 255.**self.nchannels)
+            data = data.astype(np.float32) / (1000. if self.aggregate == 'none' else 255.**self.nchannels)
 
         return data
 

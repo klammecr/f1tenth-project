@@ -354,7 +354,7 @@ if __name__ == "__main__":
                 if img_swp.shape[-1] == 1:
                         img_swp = img_swp[:, :, 0]
                 if "depth" in k:
-                    cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp*255).astype("uint8"))
+                    cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp).astype("float32"))
                 else:
                     img_swp = cv2.cvtColor(img_swp, cv2.COLOR_RGB2BGR)
                     cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp*255).astype("uint8"))

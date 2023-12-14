@@ -28,10 +28,10 @@ def draw_mask(event, x, y, flags, param):
 
 if __name__ == "__main__":
     # Read images
-    # color_img = cv2.imread("/media/cklammer/KlammerData1/dev/f1tenth-project/output/20231210_183138/color_img/290.png")
-    # color_img = cv2.resize(color_img, (IMG_SIZE[0], IMG_SIZE[1]))
-    # depth_img = cv2.imread("/media/cklammer/KlammerData1/dev/f1tenth-project/output/20231210_183138/depth_img/290.png")
-    # depth_img = cv2.resize(depth_img, (IMG_SIZE[0], IMG_SIZE[1]))
+    color_img = cv2.imread("/media/cklammer/KlammerData1/dev/f1tenth-project/output/20231210_183138/color_img/136.png")
+    color_img = cv2.resize(color_img, (IMG_SIZE[0], IMG_SIZE[1]))
+    depth_img = cv2.imread("/media/cklammer/KlammerData1/dev/f1tenth-project/output/20231210_183138/depth_img/136.png").astype(np.float32)
+    depth_img = cv2.resize(depth_img, (IMG_SIZE[0], IMG_SIZE[1]))
 
     # # Create a window and set the mouse callback
     # cv2.namedWindow("Image")
@@ -44,15 +44,15 @@ if __name__ == "__main__":
     #     key = cv2.waitKey(1) & 0xFF
     #     if key == 27:  # Press 'Esc' to exit
     #         break
-    # cv2.imwrite("segmask.png", mask)
+    # cv2.imwrite("segmask2.png", mask)
 
     # Visualization
-    # norm_depth = cv2.normalize(depth_img, None, 0, 255, norm_type=cv2.NORM_MINMAX)
-    # cv2.imshow("Depth", cv2.applyColorMap(norm_depth, cv2.COLORMAP_JET))
-    # cv2.waitKey()
+    norm_depth = cv2.normalize(depth_img, None, 0, 255, norm_type=cv2.NORM_MINMAX)
+    cv2.imshow("Depth", cv2.applyColorMap(norm_depth, cv2.COLORMAP_JET))
+    cv2.waitKey()
 
-    seg_color_img = cv2.imread("segmask.png")
+    seg_color_img = cv2.imread("segmask2.png")
     out_img = np.zeros((IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.int8)
     out_img[seg_color_img == 128] = 1
     out_img[seg_color_img == 255] = 2
-    cv2.imwrite("seg_int.png", out_img)
+    cv2.imwrite("seg_int2.png", out_img)
