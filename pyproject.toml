@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8,<4.0"
+python = "^3.8,<3.11"
 numpy = "^1.2"
 rospy2 = "^1.0.3"
 PyYAML = "^6.0.1"
@@ -22,6 +22,10 @@ gnupg = "^2.3.1"
 rospkg = "^1.5.0"
 opencv-python = "^4.8.1.78"
 roboteye = {git = "https://github.com/klammecr/robot-eye"}
+open3d = "^0.17.0"
+addict = "^2.4.0"
+pillow = "^10.1.0"
+tqdm = "^4.66.1"
 
 [build-system]
 requires = ["poetry-core"]

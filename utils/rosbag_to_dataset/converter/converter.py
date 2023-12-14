@@ -20,6 +20,7 @@ from utils.rosbag_to_dataset.dtypes.imu import ImuConvert
 from utils.rosbag_to_dataset.dtypes.pose import PoseConvert
 from utils.rosbag_to_dataset.dtypes.gridmap import GridMapConvert
 from utils.rosbag_to_dataset.dtypes.pointcloud import PointCloud2Convert
+from utils.rosbag_to_dataset.dtypes.camerainfo import CameraInfoConvert
 
 # Data type converters
 dtype_convert = {
@@ -31,7 +32,8 @@ dtype_convert = {
         "Imu":ImuConvert,
         "Pose":PoseConvert,
         "GridMap":GridMapConvert,
-        "PointCloud2":PointCloud2Convert
+        "PointCloud2":PointCloud2Convert,
+        "CameraInfo": CameraInfoConvert
     }
 
 # This code is derived from the TartanDrive github repo:
@@ -327,9 +329,9 @@ if __name__ == "__main__":
                    "/pf/viz/inferred_pose":"odom", # Raw odometry from VIO, this is from the world frame, we want this for GPS
                    "/depth/image_rect_raw": "depth_img",
                    "/color/image_raw": "color_img",
-                #   "/color/camera_info" : None,
+                   "/color/camera_info" : "color_cam_info",
                 #    "/color/metadata" : None,
-                #    "/depth/camera_info" : None,
+                   "/depth/camera_info" : "depth_cam_info",
                 #    "/depth/metadata" : None,
                 #    "/extrinsics/depth_to_color" : None,
                 #    "/extrinsics/depth_to_infra1" : None,
@@ -349,9 +351,12 @@ if __name__ == "__main__":
             for i in range(v.shape[0]):
                 img = v[i]
                 img_swp = np.transpose(img, (1, 2, 0))
-                img_swp = cv2.cvtColor(img_swp, cv2.COLOR_RGB2BGR)
                 if img_swp.shape[-1] == 1:
-                    img_swp = img_swp[:, :, 0]
-                cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp*255).astype("uint8"))
+                        img_swp = img_swp[:, :, 0]
+                if "depth" in k:
+                    cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp*255).astype("uint8"))
+                else:
+                    img_swp = cv2.cvtColor(img_swp, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite(f"{topic_dir}/{i}.png", (img_swp*255).astype("uint8"))
         else:
-            np.savetxt(f"{topic_dir}/{k}.npy", v)
+            np.save(f"{topic_dir}/{k}.npy", v)
