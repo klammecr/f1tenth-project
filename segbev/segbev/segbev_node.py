@@ -7,6 +7,7 @@ import open3d as o3d
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
+from nav_msgs.msg import OccupancyGrid
 
 # In House
 from roboteye.ground_robot import GroundRobot, Frames, COB
@@ -52,7 +53,7 @@ class SegBevNode(Node):
         )
 
         self.occ_grid_pub = self.create_publisher(
-            Image,
+            OccupancyGrid,
             "/occ_grid",
             10
         )
@@ -97,7 +98,7 @@ class SegBevNode(Node):
 
     def callback_seg_img(self, msg : Image):
         # Extract out seg img
-        seg_img = None
+        seg_img = msg.data.reshape(msg.height, msg.width)
 
         # Find where in the image the wall and car is
         locs_wall = np.where(seg_img == self.WALL_IDX)
@@ -127,13 +128,20 @@ class SegBevNode(Node):
         # o3d.visualization.draw_geometries([voxel_grid], window_name="Combined Semantic PointCloud")
         bev = self.bevify(voxel_grid)
         occ_grid = self.bev_to_occ_grid(bev)
-        self.occ_grid_pub.publish(occ_grid)
+
+        # Create an occupancy grid message
+        occupancy_grid = OccupancyGrid()
+        occupancy_grid.header.frame_id = 'map'
+        occupancy_grid.info.width = occ_grid.shape[1]  # Set the width of the grid
+        occupancy_grid.info.height = occ_grid.shape[0]  # Set the height of the grid
+        occupancy_grid.info.resolution = self.VOXEL_SIZE[0]  # Set the resolution of each grid cell
+        self.occ_grid_pub.publish(occupancy_grid)
 
     def callback_depth_cam_info(self, msg: CameraInfo):
         self.K = msg.k.reshape(3,3)
 
     def callback_depth_img(self, msg : Image):
-        self.depth_img = msg.data.reshape(msg.width, msg.height)
+        self.depth_img = msg.data.reshape(msg.height, msg.width)
         self.depth_img *= 1e-3
 
 def main(args=None):

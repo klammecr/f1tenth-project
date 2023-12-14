@@ -72,7 +72,7 @@ RRT::RRT(): rclcpp::Node("rrt_node"), gen((std::random_device())()) {
     // create ROS subscribers
     string drive_topic = "drive";
     string scan_topic = "scan";
-    string grid_topic = "hippo_map";
+    string grid_topic = "occ_grid";
     pose_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       pose_topic, 1, std::bind(&RRT::pose_callback, this, std::placeholders::_1));
     drive_sub_ = this->create_subscription<ackermann_msgs::msg::AckermannDriveStamped>(
