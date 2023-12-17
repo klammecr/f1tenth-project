@@ -1,5 +1,6 @@
 """Launch file for bringing up all nodes needed for operating the car."""
 
+import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from pathlib import Path
@@ -18,26 +19,33 @@ def generate_launch_description():
     #     executable=
     # )
 
-    # rrt_node = Node(
-    #     package="lab6_pkg",
-    #     executable="rrt_node.py",
-    #     parameters=[bag_demo_params],
-    #     remappings=[("costmap", "laser_local_costmap"),
-    #                 ("pose", "ego_racecar/pose"),
-    #                 ("path", "rrt_path")]
-    # )
-    # goal_publisher_node = Node(
-    #     package="lab6_pkg",
-    #     executable="goal_publisher_node.py",
-    #     parameters=[bag_demo_params],
-    #     remappings=[("pose", "ego_racecar/pose")]
-    # )
+    # ADD RRT NODE
+    rrt_node = Node(
+        package="project_rrt",
+        executable="project_rrt",
+        parameters=[os.path.join(
+                get_package_share_directory('project_rrt'),
+                'config', 'rrt_params.yaml')],
+        name="project_rrt"
+    )
+    # ADD SEGBEV NODE
+    seg_node = Node(
+        package="segbev",
+        executable="segbev_node",
+        name="segbev"
+    )
 
-    # ADD REALSENSE NODE.
+    # ADD REALSENSE NODE
+    realsense_node = Node(
+        package="realsense2_camera",
+        executable="realsense2_camera_node",
+        name="realsense2"
+    )
 
     # Add the launch_ros "Node" actions we created.
     ld.add_action(rrt_node)
-    ld.add_action(goal_publisher_node)
+    ld.add_action(realsense_node)
+    ld.add_action(seg_node)
 
     # Return the newly created launch description.
     return ld

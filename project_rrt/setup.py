@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'final_race'
+package_name = 'project_rrt'
 
 setup(
     name=package_name,
@@ -15,12 +15,12 @@ setup(
     zip_safe=True,
     maintainer='zzangupenn',
     maintainer_email='zzang@seas.upenn.edu',
-    description='f1tenth final_race',
+    description='f1tenth project_rrt',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'rrt_node = final_race.rrt_node:main',
+            'rrt_node = project_rrt.rrt_node:main',
         ],
     },
 )
